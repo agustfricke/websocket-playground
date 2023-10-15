@@ -24,7 +24,14 @@
           if (!msg.value) {
             return false;
           }
-          conn.send(msg.value);
+
+          // Check if the message should be an edit command
+          if (msg.value.startsWith("edit ")) {
+            conn.send(msg.value); // Send the edit command as-is
+          } else {
+            conn.send(msg.value);
+          }
+
           msg.value = "";
           return false;
         };
@@ -48,6 +55,21 @@
                 if (messageElements[i].innerText === deletedMessage) {
                   messageElements[i].remove();
                   break; // No es necesario buscar más
+                }
+              }
+            } else if (message.startsWith("edit ")) {
+              // Procesar el mensaje de edición
+              var editParts = message.split(" ");
+              if (editParts.length >= 3) {
+                var originalMessage = editParts[1];
+                var editedMessage = editParts.slice(2).join(" ");
+                // Actualiza el mensaje original en la interfaz de usuario con el mensaje editado
+                var messageElements = log.getElementsByTagName("div");
+                for (var i = 0; i < messageElements.length; i++) {
+                  if (messageElements[i].innerText === originalMessage) {
+                    messageElements[i].innerText = editedMessage;
+                    break; // No es necesario buscar más
+                  }
                 }
               }
             } else {
@@ -103,8 +125,8 @@
   <body>
     <div id="log"></div>
     <form id="form">
-      <input type="submit" value="Send" />
       <input type="text" id="msg" size="64" autofocus autocomplete="off" />
+      <input type="submit" value="Send" />
     </form>
   </body>
 </html>
