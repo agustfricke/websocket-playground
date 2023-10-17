@@ -1,0 +1,115 @@
+<!doctype html>
+<html>
+  <head>
+    <script type="text/javascript">
+      window.onload = function () {
+        var conn;
+        var msg = document.getElementById("msg");
+        var title = document.getElementById("title");
+        var log = document.getElementById("log");
+
+        function appendLog(item) {
+          var doScroll =
+            log.scrollTop > log.scrollHeight - log.clientHeight - 1;
+          log.appendChild(item);
+          if (doScroll) {
+            log.scrollTop = log.scrollHeight - log.clientHeight;
+          }
+        }
+
+        document.getElementById("form").onsubmit = function () {
+          if (!conn) {
+            return false;
+          }
+          if (!msg.value || !title.value) {
+            return false;
+          }
+
+          var message = {
+            text: msg.value,
+            title: title.value,
+          };
+
+          conn.send(JSON.stringify(message));
+          msg.value = "";
+          title.value = "";
+          return false;
+        };
+
+        if (window["WebSocket"]) {
+          conn = new WebSocket("ws://" + document.location.host + "/ws");
+          conn.onclose = function (evt) {
+            var item = document.createElement("div");
+            item.innerHTML = "<b>Connection closed.</b>";
+            appendLog(item);
+          };
+          conn.onmessage = function (evt) {
+            var message = JSON.parse(evt.data);
+            var item = document.createElement("div");
+
+            item.innerText =
+              "Title: " + message.title + ", Text: " + message.text;
+            var image = document.createElement("img");
+            image.src = message.fullFilePath;
+            image.style.maxWidth = "100%"; // Opcional: ajustar el ancho de la imagen
+
+            // Agregar la etiqueta <img> al elemento 'item'
+            item.appendChild(image);
+            appendLog(item);
+          };
+        } else {
+          var item = document.createElement("div");
+          item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
+          appendLog(item);
+        }
+      };
+    </script>
+  </head>
+  <body>
+    <div id="log"></div>
+    <form id="form">
+      <input type="submit" value="Send" />
+      <input type="text" id="title" placeholder="Title" />
+      <input type="text" id="msg" placeholder="Text" />
+    </form>
+
+    <h1>Upload file</h1>
+    <form id="file-upload-form" enctype="multipart/form-data">
+      <input type="file" name="upload" />
+      <input name="title" type="text" id="title" placeholder="Title" />
+      <input name="text" type="text" id="msg" placeholder="Text" />
+      <input type="submit" />
+    </form>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var form = document.getElementById("file-upload-form");
+
+        form.addEventListener("submit", function (e) {
+          e.preventDefault(); // Evita la acción predeterminada de envío del formulario
+
+          // Crea un objeto FormData con los datos del formulario
+          var formData = new FormData(form);
+
+          // Obtén los valores de title y text
+          var title = document.getElementById("title").value;
+          var text = document.getElementById("msg").value;
+
+          // Agrega los valores al objeto FormData
+          formData.append("title", title);
+          formData.append("text", text);
+
+          // Realiza una solicitud AJAX para enviar el formulario al servidor
+          var xhr = new XMLHttpRequest();
+          xhr.open("POST", "/upload/file", true);
+          xhr.onload = function () {
+            if (xhr.status === 200) {
+              // Maneja la respuesta exitosa del servidor (si es necesario)
+              console.log("Carga exitosa");
+            }
+          };
+          xhr.send(formData);
+        });
+      });
+    </script>
+  </body>
+</html>
